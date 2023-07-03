@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from loguru import logger
 from pydantic import BaseModel
 
-app = FastAPI
+app = FastAPI()
 
 class PostGet(BaseModel):
     id: int
@@ -64,7 +64,7 @@ def load_features():
 
 def load_models():
 
-    model_path = get_model_path("./catboost_model")
+    model_path = get_model_path(path = "./catboost_model")
     from_file = CatBoostClassifier()
     from_file.load_model(model_path)
     return from_file
@@ -78,7 +78,7 @@ logger.info("service is running")
 def recommended_posts(id:int, time: datetime, limit: int = 5):
     logger.info(f"user_id: {id}")
     logger.info("reading features")
-    user_features = features[2].loc[features[2]['user_id'] == id]
+    user_features = features[2].loc[features[2].user_id == id]
     user_features = user_features.drop("user_id", axis=1)
 
     #загрузим фичи постов
@@ -89,8 +89,10 @@ def recommended_posts(id:int, time: datetime, limit: int = 5):
     #Объединим эти фичи
     logger.info("concat all")
     add_user_features = dict(zip(user_features.columns, user_features.values[0]))
-    user_posts_features = user_features.assign(**add_user_features)
-    user_posts_features = user_posts_features.set_index("post_id")
+    logger.info("assign everything")
+    user_posts_features = posts_features.assign(**add_user_features)
+    logger.info("set user_id as index")
+    user_posts_features = user_posts_features.set_index('post_id')
 
     #Добавим инфу о времени рекомендации
     logger.info("add time features")
